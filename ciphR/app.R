@@ -1,14 +1,10 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+#by Matt Wilkins (mattwilkinsbio.com)
+#emoji object taken from https://github.com/hadley/emo 
+library(shiny);require(ggplot2);require(grid);require(gridExtra);require(emojifont)
+#devtools::install_github("hadley/emo")
+load(file="emojis.rda",verbose=T)
 
-library(shiny);require(ggplot2);require(grid);require(gridExtra)
-
+#########################################################
 # Define UI for application that draws a histogram
 ui <- fluidPage(
    
@@ -18,25 +14,36 @@ ui <- fluidPage(
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
       sidebarPanel(
-        textAreaInput("string","Text to be encoded"), 
-        numericInput("shift","Shift letters? (+/- integer)",value=0)
+        textAreaInput("string","Text to be encoded",value=""), 
+        numericInput("shift","Shift letters? (+/- integer)",value=0),
+        checkboxInput("glyphs","Random Glyphs instead of A-Z?",value=F),
+        conditionalPanel('input.glyphs==true',
+          uiOutput("seed")),
+        sliderInput("fontscale","Font Size",value=25,min=10,max=60)#,
+        #submitButton("Submit",icon=icon("laptop-code"))
       ),
       
       # Show a plot of the generated distribution
       mainPanel(
          #plotOutput("distPlot"),
         conditionalPanel('input.string !=""',
-          a("coded_msg>> "),
-          textOutput("coded"),
-            tags$head(tags$style("#coded{font-size: 24px;font-style: bold}")),
-          p(),
-          a("key>>" ),
-          plotOutput("key", height=50)
-        )
+          fluidRow(
+          column(width=12,align="left",
+          span("coded_msg>> ",style='font-weight: bold;color: blue'),
+          uiOutput("newmsg"),
+          br(),
+          span("key>> ",style='font-weight: bold;color: blue'),
+          span(textOutput("warn"),style='color:red'),
+          uiOutput("DToutput"),
+          tags$br()
+          ))
+        )#end Conditional Panel
       )
    )
 )
 
+
+###############################################################
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   d<-reactiveValues() 
@@ -50,16 +57,18 @@ server <- function(input, output) {
       hist(x, breaks = bins, col = 'darkgray', border = 'white')
    })
    
+#render the coded message
    output$coded<-renderText({
      x<-input$string
      x.vec<-tolower(unlist(strsplit(x,fixed=T,split="")))#all lower case as vector
      
-     #define new alphabet for key
+     #define new alphabet indexes for key
       alphabet<-1:26+input$shift
       alphabet.shifted<-sapply(alphabet,function(x) {if(x>26){x-26}else{ if(x<1){x+26}else{x}}})
+      #assign reactive value (global) variable w/ shifted alphabet 
       d$alphabet.out<-letters[alphabet.shifted]
      
-     
+     #shift message according to user input
      if(input$shift!=0){x.vec<-
        sapply(x.vec,function(s) {
          if(!s%in%letters){s}else{#If nonletter, leave it alone, else...
@@ -70,18 +79,64 @@ server <- function(input, output) {
       })
      }#Only do any of this if shift not 0
          
-   newmsg<-paste0(x.vec,collapse="")
-     
-    ifelse(x=="","",paste0("",newmsg)) 
-   })
-
-    output$key<-renderPlot({
-    tbl<-rbind(input=letters,output=d$alphabet.out)
-    grid.table(tbl,theme=ttheme_default(base_size = 18))
+      #if user wants glyphs, assign emojis to each letter
+      if(input$glyphs==T){
+        #isolate({
+          set.seed(input$seedval)
+          glyphabet.indx<-sample(1:nrow(jis),26,replace=F)
+        #})
+        glyphabet<-jis$emoji[glyphabet.indx]
+        d$alphabet.out<-glyphabet
+        #reassign x.vec (which may have already been shifted) to emojis
+        x.vec<-sapply(x.vec,function(s) {
+         if(!s%in%letters){s}else{#If nonletter, leave it alone, else...
+         alpha.indx<-match(s,letters)
+         emojied<-glyphabet[alpha.indx]
+         emojied
+         }})
+      }
+      
+      
+       newmsg<-paste0(x.vec,collapse="") #new (coded) message vector
+         #Output new message if new string isn't blank
+        ifelse(x=="","",paste0("",newmsg)) 
+       })
+    
+   #Output Key table
+    output$key<-renderDataTable({
+    tbl<-tibble(input=letters,output=d$alphabet.out)
+    widetbl<-t(tbl)
+    colnames(widetbl)<-paste0("V",1:26)
+    widetbl<-rbind(widetbl[,1:13],widetbl[,14:26])
+   
+   # formatStyle(table=datatable(widetbl),columns=paste0("V",1:26),backgroundColor = "yellow")
+    },colnames=rep("",13),options=list(paging=F,searching=F,bSort=F,bInfo=F,scrollX=T,autoWidth=T)#,columnDefs = list(list(width = 1, targets = "_all"))))
+   
+    )
+    
+    #warning output
+    output$warn<-renderText({
+      if(input$shift!=0 & input$glyphs==T){
+        paste0("**Note that emojis are shifted ",sprintf ("%+-d", input$shift)," letters")
+      }
     })
-   
-   
-   }
+    
+    #Output or take input from user for replicable glyph alphabet sets
+    output$seed<-renderUI({
+      if(input$glyphs==T){
+        numericInput("seedval","Glyph Set (random by default):",value=sample.int(1000,1),min=1,max=nrow(jis))
+      }
+    })
+    
+    output$newmsg<-renderUI({
+      span(textOutput("coded"), style=paste0("font-size: ",input$fontscale ,"px;font-style: bold"))
+    })
+    
+    output$DToutput<-renderUI({
+      span(dataTableOutput("key"),style=paste0('float: left; font-size:', input$fontscale,'px'))
+    })
+    
+}
 
 
 # Run the application 
