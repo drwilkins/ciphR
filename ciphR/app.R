@@ -8,13 +8,15 @@ load(file="emojis.rda",verbose=T)
 ui <- fluidPage(theme="bootstrap.css",
    
    # Application title
-   titlePanel("CiphR: secret codes for education"),
+  br(), 
+  h1("CiphR: secret codes for education"),
+  hr(),
   #withTags()
    
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
       sidebarPanel(
-        textAreaInput("string","Text to be encoded",value=""), 
+        textAreaInput("string","Text to be encoded",value="",height=100), 
         numericInput("shift","Shift letters? (+/- integer)",value=0),
         checkboxInput("glyphs","Random Glyphs instead of A-Z?",value=F),
         conditionalPanel('input.glyphs==true',
@@ -29,12 +31,12 @@ ui <- fluidPage(theme="bootstrap.css",
          #plotOutput("distPlot"),
         conditionalPanel('input.string !=""',
           fluidRow(
-          column(width=12,align="left",
-          h1("coded_msg>> "),
+          column(width=8,align="left",
+          h2("coded_msg>> "),
           uiOutput("newmsg"),
           br(),
-          h1("key>> "),
-          span(textOutput("warn"),style='color:red'),
+          h2("key>> "),
+          div(textOutput("warn"),style='color:red'),
           uiOutput("DToutput"),
           tags$br()
           ))
@@ -49,15 +51,6 @@ ui <- fluidPage(theme="bootstrap.css",
 server <- function(input, output) {
   d<-reactiveValues() 
   
-   output$distPlot <- renderPlot({
-      # generate bins based on input$bins from ui.R
-      x    <- faithful[, 2] 
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      # draw the histogram with the specified number of bins
-      hist(x, breaks = bins, col = 'darkgray', border = 'white')
-   })
-   
 #render the coded message
    output$coded<-renderText({
      x<-input$string
@@ -130,11 +123,12 @@ server <- function(input, output) {
     })
     
     output$newmsg<-renderUI({
-      div(HTML(paste0("<pre>",textOutput("coded"),"</pre>")),class="outputfield")
+      HTML(paste0('<div class="data"; style=" font-size:', input$fontscale,'px" >',textOutput("coded"),"</div></br>"))
+     # div(style=paste0('font-size:',input$fontscale))
     })
     
     output$DToutput<-renderUI({
-      span(dataTableOutput("key"),style=paste0('float: left; font-size:', input$fontscale,'px'))
+      div(dataTableOutput("key"),style=paste0('float: left; font-size:', input$fontscale,'px'))
     })
     
 }

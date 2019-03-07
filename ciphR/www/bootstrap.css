@@ -50,6 +50,10 @@
           box-sizing: border-box;
 }
 
+.data{
+  white-space: pre-wrap;
+}
+
 
 html {
   font-family: sans-serif;
