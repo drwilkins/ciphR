@@ -1,15 +1,15 @@
 #by Matt Wilkins (mattwilkinsbio.com)
 #emoji object taken from https://github.com/hadley/emo 
-library(shiny);require(ggplot2);require(grid);require(gridExtra);require(emojifont)
-#devtools::install_github("hadley/emo")
+library(shiny);require(ggplot2);require(tibble);require(DT)
 load(file="emojis.rda",verbose=T)
 
 #########################################################
 # Define UI for application that draws a histogram
-ui <- fluidPage(
+ui <- fluidPage(theme="bootstrap.css",
    
    # Application title
    titlePanel("CiphR: secret codes for education"),
+  #withTags()
    
    # Sidebar with a slider input for number of bins 
    sidebarLayout(
@@ -19,20 +19,21 @@ ui <- fluidPage(
         checkboxInput("glyphs","Random Glyphs instead of A-Z?",value=F),
         conditionalPanel('input.glyphs==true',
           uiOutput("seed")),
-        sliderInput("fontscale","Font Size",value=25,min=10,max=60)#,
+        sliderInput("fontscale","Font Size",value=22,min=10,max=60)#,
         #submitButton("Submit",icon=icon("laptop-code"))
       ),
       
       # Show a plot of the generated distribution
       mainPanel(
+        #tags$body(class='thead',style="display:none"),
          #plotOutput("distPlot"),
         conditionalPanel('input.string !=""',
           fluidRow(
           column(width=12,align="left",
-          span("coded_msg>> ",style='font-weight: bold;color: blue'),
+          h1("coded_msg>> "),
           uiOutput("newmsg"),
           br(),
-          span("key>> ",style='font-weight: bold;color: blue'),
+          h1("key>> "),
           span(textOutput("warn"),style='color:red'),
           uiOutput("DToutput"),
           tags$br()
@@ -95,24 +96,24 @@ server <- function(input, output) {
          emojied
          }})
       }
-      
-      
+     
+      #%%%% Output the secret message
        newmsg<-paste0(x.vec,collapse="") #new (coded) message vector
          #Output new message if new string isn't blank
-        ifelse(x=="","",paste0("",newmsg)) 
+        ifelse(x=="","",newmsg) 
        })
+      #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
    #Output Key table
     output$key<-renderDataTable({
     tbl<-tibble(input=letters,output=d$alphabet.out)
     widetbl<-t(tbl)
-    colnames(widetbl)<-paste0("V",1:26)
+    #setNames(widetbl,rep("",13))#paste0("V",1:26)
     widetbl<-rbind(widetbl[,1:13],widetbl[,14:26])
-   
+    datatable(widetbl,colnames=rep("",13),options=list(paging=F,searching=F,ordering=F,info=F,scrollX=T,autoWidth=T))
    # formatStyle(table=datatable(widetbl),columns=paste0("V",1:26),backgroundColor = "yellow")
-    },colnames=rep("",13),options=list(paging=F,searching=F,bSort=F,bInfo=F,scrollX=T,autoWidth=T)#,columnDefs = list(list(width = 1, targets = "_all"))))
+    })#,columnDefs = list(list(width = 1, targets = "_all"))))
    
-    )
     
     #warning output
     output$warn<-renderText({
@@ -129,7 +130,7 @@ server <- function(input, output) {
     })
     
     output$newmsg<-renderUI({
-      span(textOutput("coded"), style=paste0("font-size: ",input$fontscale ,"px;font-style: bold"))
+      div(HTML(paste0("<pre>",textOutput("coded"),"</pre>")),class="outputfield")
     })
     
     output$DToutput<-renderUI({
