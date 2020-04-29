@@ -30,4 +30,21 @@ enciphR<-function(x,alg,key=F){
 }
 
 enciphR("Hello, my name is Simon3223",alg=+3,key=T)
-      
+
+#ggGraph is a ggplot2 object
+#alg is an algorithm for enciphering strings for the enciphR function (e.g. +2)
+ggCiphR<-function(ggGraph,alg){
+  g<-ggGraph
+  pass2enciphR=function(x){enciphR(x,alg=alg)}
+  #process all labels
+  g$labels<-lapply(g$labels,pass2enciphR)
+
+  #process custom legend if present (sometimes works, depending on ggplot object)
+  try(if(length(g$scales$scales)>0){
+    for(i in 1:length(g$scales$scales)){
+      g$scales$scales[[i]]$name=enciphR(g$scales$scales[[i]],alg=alg)
+    }
+  })
+  g
+}
+
