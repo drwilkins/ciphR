@@ -5,7 +5,8 @@
 # if key=T, output will be list w/ converted text & key as items
 
 enciphR<-function(x,alg,key=F){
-  x.vec<-tolower(unlist(strsplit(x,fixed=T,split="")))#all lower case as vector
+  X.vec<-unlist(strsplit(x,fixed=T,split=""))
+  x.vec<-tolower(X.vec)#all lower case as vector
      
      #define new alphabet
       alphabet<-1:26+alg
@@ -15,12 +16,13 @@ enciphR<-function(x,alg,key=F){
       keyMat=cbind(IN=letters,OUT=alphabet.shifted)
       
     #encipher
-      x1.1<-as.vector(sapply(x.vec,function(s) {
-         if(!s%in%letters){s}else{#If nonletter, leave it alone, else...
-         keyMat[match(s,keyMat[,"IN"]),"OUT"]
+      x1.1<-as.vector(sapply(1:length(x.vec),function(s) {
+         if(!x.vec[s]%in%letters){x.vec[s]}else{#If nonletter, leave it alone, else...
+         l<-keyMat[match(x.vec[s],keyMat[,"IN"]),"OUT"]
+         if(X.vec[s]%in%LETTERS){l<-toupper(l)}
+         l
          }},USE.NAMES = F))
-      
-      x2<-paste0(x1.1,collapse="")
+     x2<-paste0(x1.1,collapse="")
   if(key){
     out<-list(IN=x,OUT=x2,KEY=keyMat)}
       else{
